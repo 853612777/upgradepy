@@ -1,22 +1,55 @@
+#-*- coding:utf-8 -*-
 from core import *
-import time
 
-host='192.168.1.204'
-root='uPP_test'
+host='192.168.1.204'#服务器ip
+root='/uPP_test'#根目录
+versionRemote='http://'+host+root+'/version.txt'#服务器上的版本号
+RemotePath='http://'+host+root+'/URI.txt'#需下载文件的路径
+versionLocal=r'version.txt'#本地版本号
+LocalTemp=r'C:\Users\Sven\Desktop\Temp'#本地临时文件夹
+DstDir=r'C:\Users\Sven\Desktop\Dst'#目的文件夹，拷贝下载下来并解压缩后的文件到这个文件夹
+logger=log(r'C:\Users\Sven\Desktop\uPPlog.txt')
 
+interval=60#60秒，检查是否有更新
+
+
+def Upgrade():
+    if NeedUpgrade(versionRemote,versionLocal):
+        fileurl=getUpgradeFileUrl(RemotePath,versionRemote)
+        filename=getUpgradeFileName(RemotePath,versionRemote)
+        MkDir(LocalTemp)
+        filefullpath=LocalTemp+'/'+filename
+        if False==download(fileurl,filefullpath):
+            logger.write('[Upgrade fail]: download file fail:'+fileurl)
+            RemoveFilesDirs(LocalTemp)
+            return
+        
+        try:
+            unzip(filefullpath,LocalTemp)
+        except:
+            logger.write('[Upgrade fail]: unzip file fail:'+filefullpath)
+            RemoveFilesDirs(LocalTemp)
+            return
+        
+        RemoveFilesDirs(filefullpath)
+        
+        CopyFiles(LocalTemp,DstDir)
+        
+        version_local=getVersionFromFile(versionLocal)
+        version_remote=getVersionFromServer(versionRemote)
+        UpdateVersion(versionLocal,version_remote)
+        
+        logger.write('[Upgrage successfully]:Version:'+version_local+' => '+version_remote)
+        RemoveFilesDirs(LocalTemp)
+        
+        
 
 def main():
     while True:
-        
-        time.sleep(60)
-        
+        Upgrade()
+        time.sleep(interval)
 
 if __name__ == '__main__':
-    # download(r'http://bbs.southbaytech.co/uc_server/avatar.php?uid=10&size=small',r'C:\Users\Sven\Desktop\down.png')
-#     unzip(r'C:\Users\Sven\Desktop\test.zip',r'C:\Users\Sven\Desktop\test\t')
-#     copyfile(r'C:\Users\Sven\Desktop\mainapp.py',r'C:\Users\Sven\Desktop\test\m.7z')
-    if NeedUpgrade('http://192.168.1.204/uPP_test/version.txt',r'C:\Users\Sven\Desktop\version.txt'):
-        fileurl= getUpgradeFile('http://192.168.1.204/uPP_test/URI.txt','http://192.168.1.204/uPP_test/version.txt')
-        download(fileurl,r'C:\Users\Sven\Desktop\ddddd.zip')
-    else:
-        print 'not need'
+    logger.write('app start')
+    main()
+    

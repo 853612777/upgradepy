@@ -1,4 +1,7 @@
 #-*- coding:utf-8 -*-
+import os
+import time
+import shutil
 
 def download(url,filename):
     import urllib2
@@ -18,7 +21,37 @@ def download(url,filename):
             urlobj.close()
         if fp:
             fp.close()
+            
+def MkDir(path):
+    if os.path.exists(path):
+        return
+    else:
+        os.mkdir(path)
+
+def MkDirs(path):
+    if os.path.exists(path):
+        return
+    else:
+        os.makedirs(path)
+        
+def RemoveFilesDirs(path):
+    if os.path.exists(path)==False:
+        return
+    if os.path.isfile(path):
+        try:
+            os.remove(path)
+        except:
+            pass
+    elif os.path.isdir(path):
+        for item in os.listdir(path):
+            dst=os.path.join(path,item)
+            RemoveFilesDirs(dst)
+        try:
+            os.rmdir(path)
+        except:
+            pass
     
+
 def getFileFromServer(url):
     import urllib2
     urlobj=None
@@ -37,15 +70,29 @@ def getFileFromServer(url):
 def unzip(src,dst,passwd=None):
     '''目录不存在也没关系'''
     import zipfile
-    f=zipfile.ZipFile(src)
-    f.extractall(path=dst,pwd=passwd)
-    f.close()
+    try:
+        f=zipfile.ZipFile(src)
+        f.extractall(path=dst,pwd=passwd)
+        f.close()
+    except:
+        raise Exception('unzip fail')
     
     
 def copyfile(src,dst):
     '''1、目录必须存在,2、会覆盖原先存在的文件'''
-    import shutil
     shutil.copy(src,dst)
+
+def CopyFiles(src,dst):
+    '''src:目录,dst:目录'''
+    if os.path.exists(src)==False:
+        return
+    MkDirs(dst)
+    for f in os.listdir(src):
+        srcfile=src+'/'+f
+        if os.path.isfile(srcfile):
+            shutil.copy(srcfile,dst+'/'+f)
+        elif os.path.isdir(srcfile):
+            CopyFiles(srcfile,dst+'/'+f)
 
 def getVersionFromServer(url):
     '''version格式:x.x.x.x'''
@@ -55,6 +102,7 @@ def getVersionFromServer(url):
         re = urllib2.Request(url)
         urlObj = urllib2.urlopen(re)
         version=urlObj.read()
+        version=str(version).replace('\n', '')
         return version
     except:
         return '0.0.0.0'
@@ -81,6 +129,7 @@ def getVersionFromFile(path):
     try:
         fp=open(path,'r')
         version=fp.read()
+        version=str(version).replace('\n', '')
         return version
     except:
         return '0.0.0.0'
@@ -133,14 +182,36 @@ def NeedUpgrade(remoteUrl,localPath):
             return False
     except:
         return False
-
-def getUpgradeFile(root,version):
+    
+def getUpgradeFileUrl(root,version):
     rt=getStringFromServer(root)
-    ver=getStringFromServer(version)
     rt=rt.replace('\n', '')
-    ver=ver.replace('\n', '')
-    return (rt+'/uPP_testV'+ver+'.zip')
+    filename=getUpgradeFileName(root,version)
+    return rt+'/'+filename
 
+def getUpgradeFileName(root,version):
+    ver=getStringFromServer(version)
+    ver=ver.replace('\n', '')
+    return 'uPP_testV'+ver+'.zip'
+
+def UpdateVersion(path,version):
+    fp=open(path,'w')
+    fp.write(version)
+    fp.close()
+
+
+class log():
+    def __init__(self,path):
+        self.filepath=path
+        
+    def write(self,content):
+        pre=time.strftime(r"[%Y/%m/%d-%H:%M:%S]:",time.localtime())
+        try:
+            fp=open(self.filepath,'a')
+            fp.write(pre+content+'\n')
+            fp.close()
+        except:
+            pass
 
     
     
