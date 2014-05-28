@@ -6,9 +6,9 @@ root='/uPP_test'#根目录
 versionRemote='http://'+host+root+'/version.txt'#服务器上的版本号
 RemotePath='http://'+host+root+'/URI.txt'#需下载文件的路径
 versionLocal=r'version.txt'#本地版本号
-LocalTemp=r'uPPTemp'#本地临时文件夹
-DstDir=r'DstTest'#目的文件夹，拷贝下载下来并解压缩后的文件到这个文件夹
-logger=log(r'uPP_Upgrade_Log.txt')
+LocalTemp=r'uPPTemp'#本地临时文件夹,程序会自动新建和自动删除
+DstDir=r'./'#目的文件夹，拷贝下载下来并解压缩后的文件到这个文件夹
+logger=log(r'uPP_Upgrade_Log.txt')#日志文件路径
 
 interval=60#60秒，检查是否有更新
 
