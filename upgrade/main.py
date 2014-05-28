@@ -6,9 +6,9 @@ root='/uPP_test'#根目录
 versionRemote='http://'+host+root+'/version.txt'#服务器上的版本号
 RemotePath='http://'+host+root+'/URI.txt'#需下载文件的路径
 versionLocal=r'version.txt'#本地版本号
-LocalTemp=r'C:\Users\Sven\Desktop\Temp'#本地临时文件夹
-DstDir=r'C:\Users\Sven\Desktop\Dst'#目的文件夹，拷贝下载下来并解压缩后的文件到这个文件夹
-logger=log(r'C:\Users\Sven\Desktop\uPPlog.txt')
+LocalTemp=r'uPPTemp'#本地临时文件夹
+DstDir=r'DstTest'#目的文件夹，拷贝下载下来并解压缩后的文件到这个文件夹
+logger=log(r'uPP_Upgrade_Log.txt')
 
 interval=60#60秒，检查是否有更新
 
@@ -37,7 +37,10 @@ def Upgrade():
         
         version_local=getVersionFromFile(versionLocal)
         version_remote=getVersionFromServer(versionRemote)
-        UpdateVersion(versionLocal,version_remote)
+        if False==UpdateVersion(versionLocal,version_remote):
+            logger.write('[Upgrade fail]: update local version.txt fail:'+versionLocal)
+            RemoveFilesDirs(LocalTemp)
+            return
         
         logger.write('[Upgrage successfully]:Version:'+version_local+' => '+version_remote)
         RemoveFilesDirs(LocalTemp)

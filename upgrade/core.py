@@ -93,7 +93,7 @@ def CopyFiles(src,dst):
             shutil.copy(srcfile,dst+'/'+f)
         elif os.path.isdir(srcfile):
             CopyFiles(srcfile,dst+'/'+f)
-
+            
 def getVersionFromServer(url):
     '''version格式:x.x.x.x'''
     import urllib2
@@ -195,9 +195,16 @@ def getUpgradeFileName(root,version):
     return 'uPP_testV'+ver+'.zip'
 
 def UpdateVersion(path,version):
-    fp=open(path,'w')
-    fp.write(version)
-    fp.close()
+    fp=None
+    try:
+        fp=open(path,'w')
+        fp.write(version)
+        return True
+    except:
+        return False
+    finally:
+        if fp:
+            fp.close()
 
 
 class log():
