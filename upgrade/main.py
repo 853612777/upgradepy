@@ -1,5 +1,7 @@
 #-*- coding:utf-8 -*-
-from core import *
+from core import NeedUpgrade,getUpgradeFileUrl,getUpgradeFileName,log,MkDir,\
+download,RemoveFilesDirs,unzip,CopyFiles,getVersionFromFile,getVersionFromServer,\
+UpdateVersion,time
 
 host='192.168.1.204'#服务器ip
 root='/uPP_test'#根目录
