@@ -3,6 +3,47 @@ import os
 import time
 import shutil
 
+def getINI(lines):
+    try:
+        for line in lines:
+            line=line.strip().
+    
+
+class Config():
+    def __init__(self,path):
+        self.path=path
+    
+    def Read(self):
+        fp=None
+        try:
+            fp=open(self.path,'r')
+            lines=fp.readlines()
+            self.versionLocal=lines[0]
+            self.Pid=lines[1]
+            self.versionLocal=lines[2]
+            return True
+        except:
+            return False
+        finally:
+            if fp:
+                fp.close()
+    
+    def Write(self):
+        fp=None
+        try:
+            fp=open(self.path,'w')
+            lines=fp.readlines()
+            self.versionLocal=lines[0]
+            self.Pid=lines[1]
+            self.versionLocal=lines[2]
+            return True
+        except:
+            return False
+        finally:
+            if fp:
+                fp.close()
+    
+
 def download(url,filename):
     import urllib2
     urlobj=None
