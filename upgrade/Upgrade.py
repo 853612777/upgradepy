@@ -135,7 +135,7 @@ def getFileFromServer(url):
 
 
 def unzip(src,dst,passwd=None):
-    '''目录不存在也没关系'''
+    '''Ŀ¼������Ҳû��ϵ'''
     import zipfile
     try:
         f=zipfile.ZipFile(src)
@@ -144,13 +144,9 @@ def unzip(src,dst,passwd=None):
     except:
         raise Exception('unzip fail')
     
-    
-def copyfile(src,dst):
-    '''1、目录必须存在,2、会覆盖原先存在的文件'''
-    shutil.copy(src,dst)
 
 def CopyFiles(src,dst):
-    '''src:目录,dst:目录'''
+    ''''''
     if os.path.exists(src)==False:
         return
     MkDirs(dst)
@@ -162,7 +158,7 @@ def CopyFiles(src,dst):
             CopyFiles(srcfile,dst+'/'+f)
             
 def getVersionFromServer(url):
-    '''version格式:x.x.x.x'''
+    '''version:x.x.x.x'''
     import urllib2
     urlObj=None
     try:
@@ -205,7 +201,7 @@ def getVersionFromFile(path):
             fp.close()
 
 def VersionConvert(version):
-    '''将字符串版本转换为元组'''
+    '''将字符串版本变成元组形式'''
     try:
         vers=version.split('.')
         if len(vers)!=4:
@@ -215,7 +211,7 @@ def VersionConvert(version):
         return (0,0,0,0)
 
 def CompareVersion(ver1,ver2):
-    '''ver1大于ver2返回1;等于0,小于-1'''
+    '''ver1>ver2,1;ver1=ver2,0;ver1<ver2,-1'''
     if ver1[0]>ver2[0]:
         return 1
     elif ver1[0]<ver2[0]:
@@ -245,18 +241,6 @@ def getUpgradeFileUrl(uri,appname,version):
 
 def getUpgradeFileName(appname,version):
     return appname+'V'+version+'.zip'
-
-def UpdateVersion(path,version):
-    fp=None
-    try:
-        fp=open(path,'w')
-        fp.write(version)
-        return True
-    except:
-        return False
-    finally:
-        if fp:
-            fp.close()
 
 class log():
     def __init__(self,path):
@@ -354,7 +338,7 @@ def mainLoop():
     
     
 def getPID(keyword):
-    '''根据关键字找出进程的PID'''
+    '''根据关键字得到PID'''
     cmd="ps ax|grep "+keyword+" |grep -v grep |awk '{print $1}'"
     try:
         proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
