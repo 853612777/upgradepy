@@ -38,6 +38,7 @@ class Config():
             self.Pid=getString(values,'pid','0')
             self.appname=getString(values,'appname','uServer')
             self.apphome=getString(values,'apphome','/home/server')
+            self.exePath=getString(values,'exePath','/home/server/uServer/bin')
             self.URI=getString(values,'URI','http://192.168.1.204/')
             self.logip=getString(values,'logip','192.168.1.204')
             self.selfstarting=getString(values,'selfstarting','python /home/server/uServerUpgrade.py')
@@ -56,6 +57,7 @@ class Config():
             fp.write('pid = '+self.Pid+'\n')
             fp.write('appname = '+self.appname+'\n')
             fp.write('apphome = '+self.apphome+'\n')
+            fp.write('exePath = '+self.exePath+'\n')
             fp.write('URI = '+self.URI+'\n')
             fp.write('logip = '+self.logip+'\n')
             fp.write('selfstarting = '+self.selfstarting+'\n')
@@ -275,6 +277,11 @@ def WriteRcLocal(content):
         fp=open(path,'r')
         lines=fp.readlines()
         fp.close()
+        
+        for line in lines:
+            if line.strip()==content:
+                return True
+        
         fp=open(path,'w')
         pos=len(lines)-1
         lines.insert(pos,content+'\n')
@@ -321,10 +328,11 @@ def Upgrade(config):
             logger.write('[KillServer fail]:can not kill pid:'+config.Pid)
         
         if False==StartServer(config):
-            logger.write('[StartServer fail]: can not start server'+config.appname)
+            logger.write('[StartServer fail]: can not start server: '+config.appname)
+            RemoveFilesDirs(LocalTemp)
+            return
         
         config.UpdateVersion(versionRemote)
-        config.UpdatePid()
         config.Write()
         
         logger.write('[Upgrage successfully]:Version:'+versionLocal+' => '+versionRemote)
@@ -333,7 +341,7 @@ def Upgrade(config):
 
 def mainLoop():
     while True:
-        Upgrade()
+        Upgrade(config)
         time.sleep(60)
     
     
@@ -348,16 +356,24 @@ def getPID(keyword):
         return -1
     
 def StartServer(config):
-    cmd=config.apphome+'/'+config.appname
-    keyword=cmd
+    exefile=config.exePath+config.appname
+    if os.path.exists(exefile)==False:
+        return False
+    os.system('chmod 777 '+exefile)
+    cmd='cd '+config.exePath+' & ./'+config.appname
+    keyword=config.appname
     try:
-        subprocess.Popen(cmd,stdout=open('/dev/null','w'),stderr=subprocess.STDOUT,shell=True)
+        subprocess.Popen(cmd,stderr=subprocess.STDOUT,shell=True)
         time.sleep(2)
+        print cmd
         pid=getPID(keyword)
         if -1==pid:
             config.UpdatePid(0)
             return False
         else:
+            if pid==config.Pid:
+                logger.write('[StartServer error]:has not been killed before')
+                return False
             config.UpdatePid(pid)
             return True
     except:
@@ -365,13 +381,15 @@ def StartServer(config):
         return False
     
 def KillServer(config):
-    pid=config.Pid
-    keyword=config.apphome+'/'+config.appname
+    pid=int(config.Pid)
+    keyword=config.appname
     another=getPID(keyword)
     if -1==another:
-        logger.write('[pid error]:can not find pid by keyword')
-    if pid!=another:
-        logger.write('[pid error]:config pid not eq getPID() pid')
+        pass
+        #logger.write('[pid error]:can not find pid by keyword')
+    if pid!=another and pid!=0:
+        pass
+        #logger.write('[pid error]:config pid not eq getPID() pid')
     if 0!=pid:
         os.kill(pid, 9)
         config.UpdatePid(0)
