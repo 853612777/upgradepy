@@ -34,7 +34,7 @@ class Worker(threading.Thread):
         bs=self.client.recv(4)
         content_len,=struct.unpack('i',bs)
         content=self.client.recv(int(content_len))
-        content='['+str(self.ipaddr)+']:'+content
+        content='['+str(self.ipaddr[0])+']:'+content
         logqueue.put(content)
 
 class Server():
