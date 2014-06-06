@@ -25,8 +25,8 @@ def getString(values,key,default):
     
 class Config():
     def __init__(self,path):
-        self.inipath=path
         self.home=sys.path[0]
+        self.inipath=self.home+'/'+path
     
     def Read(self):
         fp=None
@@ -137,7 +137,7 @@ def getFileFromServer(url):
 
 
 def unzip(src,dst,passwd=None):
-    '''Ŀ¼������Ҳû��ϵ'''
+    '''路径不必存在'''
     import zipfile
     try:
         f=zipfile.ZipFile(src)
@@ -322,10 +322,15 @@ def Upgrade(config):
         
         RemoveFilesDirs(filefullpath)
         
-        CopyFiles(LocalTemp,DstDir)
-        
         if False==KillServer(config):
             logger.write('[KillServer fail]:can not kill pid:'+config.Pid)
+        
+        try:
+            CopyFiles(LocalTemp,DstDir)#after killserver or error:Text file busy
+        except:
+            logger.write('[CopyFiles fail]:can not copy files to dst:'+DstDir)
+            RemoveFilesDirs(LocalTemp)
+            return
         
         if False==StartServer(config):
             logger.write('[StartServer fail]: can not start server: '+config.appname)
@@ -335,6 +340,7 @@ def Upgrade(config):
         config.UpdateVersion(versionRemote)
         config.Write()
         
+        logger.write('[restart Server successfully]:PID:'+config.Pid)
         logger.write('[Upgrage successfully]:Version:'+versionLocal+' => '+versionRemote)
         RemoveFilesDirs(LocalTemp)
         
@@ -347,7 +353,7 @@ def mainLoop():
     
 def getPID(keyword):
     '''根据关键字得到PID'''
-    cmd="ps ax|grep "+keyword+" |grep -v grep |awk '{print $1}'"
+    cmd="ps ax|grep -w "+keyword+" |grep -v grep |awk '{print $1}'"
     try:
         proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
         pid=proc.stdout.read()
@@ -356,16 +362,15 @@ def getPID(keyword):
         return -1
     
 def StartServer(config):
-    exefile=config.exePath+config.appname
+    exefile=config.exePath+'/'+config.appname
     if os.path.exists(exefile)==False:
         return False
     os.system('chmod 777 '+exefile)
-    cmd='cd '+config.exePath+' & ./'+config.appname
+    cmd='cd '+config.exePath+' && ./'+config.appname
     keyword=config.appname
     try:
         subprocess.Popen(cmd,stderr=subprocess.STDOUT,shell=True)
         time.sleep(2)
-        print cmd
         pid=getPID(keyword)
         if -1==pid:
             config.UpdatePid(0)
@@ -375,28 +380,22 @@ def StartServer(config):
                 logger.write('[StartServer error]:has not been killed before')
                 return False
             config.UpdatePid(pid)
+            config.Write()
             return True
     except:
         config.UpdatePid(0)
         return False
     
 def KillServer(config):
-    pid=int(config.Pid)
-    keyword=config.appname
-    another=getPID(keyword)
-    if -1==another:
-        pass
-        #logger.write('[pid error]:can not find pid by keyword')
-    if pid!=another and pid!=0:
-        pass
-        #logger.write('[pid error]:config pid not eq getPID() pid')
-    if 0!=pid:
-        os.kill(pid, 9)
-        config.UpdatePid(0)
-    if 0==pid and -1!=another:
-        os.kill(another, 9)
-        config.UpdatePid(0)
-    return True
+    try:
+        keyword=config.appname
+        pid=getPID(keyword)
+        if -1!=pid:
+            os.kill(pid, 9)
+            config.UpdatePid(0)
+        return True
+    except:
+        return False
     
 
 def selfStarting(config):
@@ -407,7 +406,7 @@ def selfStarting(config):
     
 
 if __name__ == '__main__':
-    logger=log(time.strftime(r"%Y_%m_%d_%H_%M_%S",time.localtime())+'.log')
+    logger=log(sys.path[0]+'/logUpgrade.log')
     logger.write('python app start')
     config=Config('Config.ini')
     if False==config.Read():
@@ -415,6 +414,8 @@ if __name__ == '__main__':
         sys.exit(1)
     selfStarting(config)
     KillServer(config)
-    StartServer(config)
+    bstart=StartServer(config)
+    if bstart:
+        logger.write('[StartServer successfully]:PID:'+config.Pid)
     mainLoop()
     
