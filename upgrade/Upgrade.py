@@ -4,6 +4,8 @@ import time
 import shutil
 import sys
 import subprocess
+import socket
+import struct
 
 def readINI(lines):
     result={}
@@ -41,6 +43,7 @@ class Config():
             self.exePath=getString(values,'exePath','/home/server/uServer/bin')
             self.URI=getString(values,'URI','http://192.168.1.204/')
             self.logip=getString(values,'logip','192.168.1.204')
+            self.logport=getString(values,'logport','5678')
             self.selfstarting=getString(values,'selfstarting','python /home/server/uServerUpgrade.py')
             return True
         except:
@@ -60,6 +63,7 @@ class Config():
             fp.write('exePath = '+self.exePath+'\n')
             fp.write('URI = '+self.URI+'\n')
             fp.write('logip = '+self.logip+'\n')
+            fp.write('logport = '+self.logport+'\n')
             fp.write('selfstarting = '+self.selfstarting+'\n')
             return True
         except:
@@ -244,18 +248,38 @@ def getUpgradeFileUrl(uri,appname,version):
 def getUpgradeFileName(appname,version):
     return appname+'V'+version+'.zip'
 
+class Client():
+    def __init__(self,config):
+        self.logip=config.logip
+        self.logport=config.logport
+    def SendString(self,content):
+        content_len=len(content)
+        bs=struct.pack('i',content_len)
+        self.sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
+        try:
+            self.sockfd.connect((self.logip,int(self.logport)))
+            self.sockfd.send(bs)
+            self.sockfd.send(content)
+        except:
+            print 'sendstring to logSummary error'
+            pass
+        finally:
+            self.sockfd.close()
+
 class log():
     def __init__(self,path):
         self.filepath=path
         
     def write(self,content):
         pre=time.strftime(r"[%Y/%m/%d-%H:%M:%S]:",time.localtime())
+        content=pre+content+'\n'
         try:
             fp=open(self.filepath,'a')
-            fp.write(pre+content+'\n')
+            fp.write(content)
             fp.close()
         except:
             pass
+        client.SendString(content)
 
 
 def NeedUpgrade(versionRemote,versionLocal):
@@ -405,13 +429,15 @@ def selfStarting(config):
             sys.exit(2)
     
 
+
 if __name__ == '__main__':
-    logger=log(sys.path[0]+'/logUpgrade.log')
-    logger.write('python app start')
     config=Config('Config.ini')
     if False==config.Read():
-        logger.write('read ini error')
+        print 'read ini error'
         sys.exit(1)
+    client=Client(config)
+    logger=log(sys.path[0]+'/logUpgrade.log')
+    logger.write('python app start')
     selfStarting(config)
     KillServer(config)
     bstart=StartServer(config)
