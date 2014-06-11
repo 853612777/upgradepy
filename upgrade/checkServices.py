@@ -1,6 +1,8 @@
 #-*- coding:utf-8 -*-
 
 import socket
+import os
+import sys
 
 def telnet_core(host,port,timeout):
     sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -18,10 +20,26 @@ def telnet(host,port,timeout,times):
         result=telnet_core(host,port,timeout)
         if result==True:
             return True
-    return False    
+    return False
+
+def getServices():
+    path=os.path.join(sys.path[0],'Services.ini')
+    fp=None
+    result=[]
+    try:
+        fp=open(path,'r')
+        lines=fp.readlines()
+        for line in lines:
+            result.append(line.strip())
+        return result
+    except:
+        return []
+    finally:
+        if fp:
+            fp.close()
 
 def main():
-    global services
+    services=getServices()
     for service in services:
         host,port,serviceName=service.split(':')
         if telnet(host,port,1000,2):
@@ -30,11 +48,6 @@ def main():
             print service+' is down'
 
 
-
-
-
-
-services=['192.168.1.204:8003:uServer']
 
 if __name__=='__main__':
     main()
