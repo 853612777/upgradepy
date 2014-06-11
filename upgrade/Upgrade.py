@@ -272,7 +272,7 @@ class log():
         
     def write(self,content):
         pre=time.strftime(r"[%Y/%m/%d-%H:%M:%S]:",time.localtime())
-        content=pre+content+'\n'
+        content=pre+'['+str(os.getpid())+']:'+content+'\n'
         try:
             fp=open(self.filepath,'a')
             fp.write(content)
@@ -437,15 +437,15 @@ if __name__ == '__main__':
         sys.exit(1)
     client=Client(config)
     logger=log(sys.path[0]+'/logUpgrade.log')
-    logger.write('python app start')
+    logger.write('python Upgrade.py start')
     selfStarting(config)
     KillServer(config)
     bstart=StartServer(config)
     if bstart:
-        logger.write('[StartServer successfully]:PID:'+config.Pid)
+        logger.write('[StartServer successfully]:appname:'+config.appname+',PID:'+config.Pid)
     try:
         mainLoop()
-        logger.write('[Upgrade.exe error]:Upgrade.exe has exited')
+        logger.write('[Upgrade.py error]:'+__file__+' has exited')
     except KeyboardInterrupt:
         print 'Ctrl^C'
     
