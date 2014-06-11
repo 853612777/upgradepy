@@ -377,7 +377,7 @@ def mainLoop():
     
 def getPID(keyword):
     '''根据关键字得到PID'''
-    cmd="ps ax|grep -w "+keyword+" |grep -v grep |awk '{print $1}'"
+    cmd="ps ax|grep -w "+keyword+" |grep -v python|grep -v grep |awk '{print $1}'"
     try:
         proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
         pid=proc.stdout.read()
@@ -443,5 +443,9 @@ if __name__ == '__main__':
     bstart=StartServer(config)
     if bstart:
         logger.write('[StartServer successfully]:PID:'+config.Pid)
-    mainLoop()
+    try:
+        mainLoop()
+        logger.write('[Upgrade.exe error]:Upgrade.exe has exited')
+    except KeyboardInterrupt:
+        print 'Ctrl^C'
     
