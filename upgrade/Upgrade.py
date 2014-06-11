@@ -375,15 +375,18 @@ def mainLoop():
         time.sleep(60)
     
     
-def getPID(keyword):
+def getPIDs(keyword):
     '''根据关键字得到PID'''
     cmd="ps ax|grep -w "+keyword+" |grep -v python|grep -v grep |awk '{print $1}'"
+    result=[]
     try:
         proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
-        pid=proc.stdout.read()
-        return int(pid.strip())
+        pids=proc.stdout.readlines()
+        for pid in pids:
+            result.append(int(pid.strip()))
+        return result
     except:
-        return -1
+        return []
     
 def StartServer(config):
     exefile=config.exePath+'/'+config.appname
@@ -395,15 +398,15 @@ def StartServer(config):
     try:
         subprocess.Popen(cmd,stderr=subprocess.STDOUT,shell=True)
         time.sleep(2)
-        pid=getPID(keyword)
-        if -1==pid:
+        pids=getPIDs(keyword)
+        if []==pids:
             config.UpdatePid(0)
             return False
         else:
-            if pid==config.Pid:
+            if pids[0]==config.Pid:
                 logger.write('[StartServer error]:has not been killed before')
                 return False
-            config.UpdatePid(pid)
+            config.UpdatePid(pids[0])
             config.Write()
             return True
     except:
@@ -413,9 +416,10 @@ def StartServer(config):
 def KillServer(config):
     try:
         keyword=config.appname
-        pid=getPID(keyword)
-        if -1!=pid:
-            os.kill(pid, 9)
+        pids=getPIDs(keyword)
+        if []!=pids:
+            for pid in pids:
+                os.kill(pid, 9)
             config.UpdatePid(0)
         return True
     except:
