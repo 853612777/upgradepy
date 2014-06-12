@@ -30,7 +30,50 @@ def getAppPath():
     if os.path.isfile(path):
         path,name=os.path.split(path)
     return path
+
+def libsCheck_core(libs):
+    '''返回不存在的库名字'''
+    libspath=['/usr/local/lib','/usr/lib']
+    result=[]
+    isexist=False
+    for lib in libs:
+        for libpath in libspath:
+            tmppath=os.path.join(libpath,lib)
+            if os.path.exists(tmppath):
+                isexist=True
+                break
+        if isexist:
+            isexist=False
+        else:
+            result.append(lib)
+    return result
+
+def libsCheck(config):
+    libs=config.libs
+    ret=libsCheck_core(libs)
+    if []==ret:
+        return
+    else:
+        logger.write('[libs check error]:'+str(ret))
+
+def getlibs(values,key):
+    if values==None:
+        return []
+    try:
+        result=values[key]
+        if ''==result:
+            return []
+        tmp=result.split(';')
+        ret=[]
+        for t in tmp:
+            if ''!=t:
+                ret.append(t)
+        return ret
+
+    except:
+        return []
     
+
 class Config():
     def __init__(self,path):
         self.home=getAppPath()
@@ -51,6 +94,7 @@ class Config():
             self.logip=getString(values,'logip','192.168.1.204')
             self.logport=getString(values,'logport','5678')
             self.selfstarting=getString(values,'selfstarting','python /home/server/uServerUpgrade.py')
+            self.libs=getlibs(values,'libs')
             return True
         except:
             return False
@@ -71,6 +115,7 @@ class Config():
             fp.write('logip = '+self.logip+'\n')
             fp.write('logport = '+self.logport+'\n')
             fp.write('selfstarting = '+self.selfstarting+'\n')
+            fp.write('libs = '+';'.join(self.libs)+'\n')
             return True
         except:
             return False
@@ -448,7 +493,8 @@ if __name__ == '__main__':
     client=Client(config)
     logger=log(getAppPath()+'/logUpgrade.log')
     logger.write('python Upgrade.py start')
-    selfStarting(config)
+    selfStarting(config)#自启动
+    libsCheck(config)#检查依赖库
     KillServer(config)
     bstart=StartServer(config)
     if bstart:
