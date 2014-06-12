@@ -3,6 +3,7 @@
 import socket
 import os
 import sys
+import ctypes
 
 def getAppPath():
     path=sys.path[0]
@@ -45,16 +46,23 @@ def getServices():
         if fp:
             fp.close()
 
+def set_color(color, handle=ctypes.windll.kernel32.GetStdHandle(-11)):
+    return ctypes.windll.kernel32.SetConsoleTextAttribute(handle, color)
+
 def main():
     services=getServices()
     for service in services:
         host,port,serviceName=service.split(':')
         if telnet(host,port,1000,2):
+            set_color(0x0A)
             print service+' is up'
         else:
+            set_color(0x7C)
             print service+' is down'
+    set_color(0x0F)
 
 
 
 if __name__=='__main__':
     main()
+    os.system('pause')
