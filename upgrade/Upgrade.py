@@ -6,6 +6,7 @@ import sys
 import subprocess
 import socket
 import struct
+import urllib2
 
 def readINI(lines):
     result={}
@@ -69,10 +70,89 @@ def getlibs(values,key):
             if ''!=t:
                 ret.append(t)
         return ret
-
     except:
         return []
     
+def getIPs(values,key):
+    if values==None:
+        return[]
+    try:
+        result=values[key]
+        if ''==result:
+            return []
+        tmp=result.split(';')
+        ret=[]
+        for t in tmp:
+            if ''!=t:
+                ret.append(t)
+        return ret
+    except:
+        return []
+
+def getURIs(values,key):
+    if values==None:
+        return[]
+    try:
+        result=values[key]
+        if ''==result:
+            return []
+        tmp=result.split(';')
+        ret=[]
+        for t in tmp:
+            if ''!=t:
+                ret.append(t)
+        return ret
+    except:
+        return []
+    
+def telnet_core(host,port,timeout):
+    sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((host,int(port)))
+        return True
+    except:
+        return False
+    finally:
+        sock.close()
+
+def telnet(host,port,timeout,times):
+    for x in range(0,times):
+        result=telnet_core(host,port,timeout)
+        if result==True:
+            return True
+    return False
+    
+
+def URItest(URI):
+    urlobj=None
+    try:
+        req=urllib2.Request(URI)
+        urlobj=urllib2.urlopen(req,timeout=2)
+        return True
+    except:
+        return False
+    finally:
+        if urlobj:
+            urlobj.close()
+
+
+def getURI(URIs):
+    if []==URIs:
+        return '192.168.5.204'
+    for uri in URIs:
+        if URItest(uri):
+            return uri
+    return URIs[0]
+
+def getIP(ips,port):
+    if []==ips:
+        return '192.168.5.204'
+    for ip in ips:
+        if telnet(ip,port,1000,2):
+            return ip
+    return ips[0]
+
 
 class Config():
     def __init__(self,path):
@@ -90,9 +170,11 @@ class Config():
             self.appname=getString(values,'appname','uServer')
             self.apphome=getString(values,'apphome','/home/server')
             self.exePath=getString(values,'exePath','/home/server/uServer/bin')
-            self.URI=getString(values,'URI','http://192.168.1.204/')
-            self.logip=getString(values,'logip','192.168.1.204')
+            self.URIs=getURIs(values,'URIs')
+            self.URI=getURI(self.URIs)
             self.logport=getString(values,'logport','5678')
+            self.logips=getIPs(values,'logips')
+            self.logip=getIP(self.logips,self.logport)
             self.selfstarting=getString(values,'selfstarting','python /home/server/uServerUpgrade.py')
             self.libs=getlibs(values,'libs')
             return True
@@ -111,8 +193,8 @@ class Config():
             fp.write('appname = '+self.appname+'\n')
             fp.write('apphome = '+self.apphome+'\n')
             fp.write('exePath = '+self.exePath+'\n')
-            fp.write('URI = '+self.URI+'\n')
-            fp.write('logip = '+self.logip+'\n')
+            fp.write('URIs = '+';'.join(self.URIs)+'\n')
+            fp.write('logips = '+';'.join(self.logips)+'\n')
             fp.write('logport = '+self.logport+'\n')
             fp.write('selfstarting = '+self.selfstarting+'\n')
             fp.write('libs = '+';'.join(self.libs)+'\n')
@@ -129,7 +211,6 @@ class Config():
         self.Pid=str(pid)
 
 def download(url,filename):
-    import urllib2
     urlobj=None
     fp=None
     try:
@@ -177,7 +258,6 @@ def RemoveFilesDirs(path):
             pass
     
 def getFileFromServer(url):
-    import urllib2
     urlobj=None
     try:
         re = urllib2.Request(url)
@@ -216,7 +296,6 @@ def CopyFiles(src,dst):
             
 def getVersionFromServer(url):
     '''version:x.x.x.x'''
-    import urllib2
     urlObj=None
     try:
         re = urllib2.Request(url)
@@ -231,7 +310,6 @@ def getVersionFromServer(url):
             urlObj.close()
             
 def getStringFromServer(url):
-    import urllib2
     urlObj=None
     try:
         re = urllib2.Request(url)
@@ -302,20 +380,33 @@ def getUpgradeFileName(appname,version):
 class Client():
     def __init__(self,config):
         self.logip=config.logip
+        self.logips=config.logips
         self.logport=config.logport
-    def SendString(self,content):
+    
+    def sendstring_core(self,ip,port,content):
+        sockfd=None
         content_len=len(content)
         bs=struct.pack('i',content_len)
-        self.sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
         try:
-            self.sockfd.connect((self.logip,int(self.logport)))
-            self.sockfd.send(bs)
-            self.sockfd.send(content)
+            sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
+            sockfd.connect((ip,int(port)))
+            sockfd.send(bs)
+            sockfd.send(content)
+            return True
         except:
-            print 'sendstring to logSummary error'
-            pass
+            return False
         finally:
-            self.sockfd.close()
+            if sockfd:
+                sockfd.close()
+    
+    def SendString(self,content):
+        success=False
+        for ip in self.logips:
+            if self.sendstring_core(ip,self.logport,content):
+                success=True
+        if False==success:
+            print 'all logSummary Hosts are down'
+        
 
 class log():
     def __init__(self,path):
@@ -444,7 +535,7 @@ def StartServer(config):
     if os.path.exists(exefile)==False:
         return False
     os.system('chmod 777 '+exefile)
-    cmd='cd '+config.exePath+' && ./'+config.appname
+    cmd='cd '+config.exePath+'&&./'+config.appname
     keyword=config.appname
     try:
         subprocess.Popen(cmd,stderr=subprocess.STDOUT,shell=True)
