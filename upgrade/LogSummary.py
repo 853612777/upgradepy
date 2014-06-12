@@ -5,11 +5,18 @@ import threading
 import struct
 import sys
 import Queue
+import os
+
+def getAppPath():
+    path=sys.path[0]
+    if os.path.isfile(path):
+        path,name=os.path.split(path)
+    return path
 
 class log(threading.Thread):
     def __init__(self,path):
         threading.Thread.__init__(self)
-        self.filepath=sys.path[0]+'/'+path
+        self.filepath=os.path.join(getAppPath(),path)
         self.fp=open(self.filepath,'a')
         
     def run(self):

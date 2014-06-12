@@ -4,6 +4,13 @@ import socket
 import os
 import sys
 
+def getAppPath():
+    path=sys.path[0]
+    if os.path.isfile(path):
+        path,name=os.path.split(path)
+    return path
+    
+
 def telnet_core(host,port,timeout):
     sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.settimeout(timeout)
@@ -23,7 +30,7 @@ def telnet(host,port,timeout,times):
     return False
 
 def getServices():
-    path=os.path.join(sys.path[0],'Services.ini')
+    path=os.path.join(getAppPath(),'Services.ini')
     fp=None
     result=[]
     try:

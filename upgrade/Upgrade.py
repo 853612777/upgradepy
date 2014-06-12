@@ -25,9 +25,15 @@ def getString(values,key,default):
     except:
         return default
     
+def getAppPath():
+    path=sys.path[0]
+    if os.path.isfile(path):
+        path,name=os.path.split(path)
+    return path
+    
 class Config():
     def __init__(self,path):
-        self.home=sys.path[0]
+        self.home=getAppPath()
         self.inipath=self.home+'/'+path
     
     def Read(self):
@@ -440,7 +446,7 @@ if __name__ == '__main__':
         print 'read ini error'
         sys.exit(1)
     client=Client(config)
-    logger=log(sys.path[0]+'/logUpgrade.log')
+    logger=log(getAppPath()+'/logUpgrade.log')
     logger.write('python Upgrade.py start')
     selfStarting(config)
     KillServer(config)
