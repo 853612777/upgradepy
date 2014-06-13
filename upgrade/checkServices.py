@@ -53,7 +53,7 @@ def main():
     services=getServices()
     for service in services:
         host,port,serviceName=service.split(':')
-        if telnet(host,port,1000,2):
+        if telnet(host,port,1,2):
             set_color(0x0A)
             print service+' is up'
         else:
