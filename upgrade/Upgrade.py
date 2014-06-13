@@ -150,7 +150,7 @@ def getIP(ips,port):
     if []==ips:
         return '192.168.5.204'
     for ip in ips:
-        if telnet(ip,port,1000,2):
+        if telnet(ip,port,1,2):
             return ip
     return ips[0]
 
@@ -390,6 +390,7 @@ class Client():
         bs=struct.pack('i',content_len)
         try:
             sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM,0)
+            sockfd.settimeout(2)
             sockfd.connect((ip,int(port)))
             sockfd.send(bs)
             sockfd.send(content)
@@ -533,7 +534,7 @@ def getPIDs(keyword):
     
 
 def chmod(path):
-    exts=set(['.cpp','.log','.h','.hpp','.c','.txt'])
+    exts=set(['.cpp','.log','.h','.hpp','.c','.txt','.xml','.sql'])
     if os.path.exists(path)==False:
         return
     if os.path.isfile(path):
@@ -607,9 +608,12 @@ if __name__ == '__main__':
     logger=log(getAppPath()+'/logUpgrade.log')
     logger.write('python Upgrade.py start')
     selfStarting(config)#自启动
+    print 'selfStarting done...'
     libsCheck(config)#检查依赖库
+    print 'libsCheck done...'
     KillServer(config)
     bstart=StartServer(config)
+    print 'StartServer done...'
     if bstart:
         logger.write('[StartServer successfully]:appname:'+config.appname+',PID:'+config.Pid)
     try:
