@@ -7,6 +7,7 @@ import subprocess
 import socket
 import struct
 import urllib2
+import stat
 
 def readINI(lines):
     result={}
@@ -530,11 +531,32 @@ def getPIDs(keyword):
     except:
         return []
     
+
+def chmod(path):
+    exts=set(['.cpp','.log','.h','.hpp','.c','.txt'])
+    if os.path.exists(path)==False:
+        return
+    if os.path.isfile(path):
+        fi,ext=os.path.splitext(path)
+        if ext in exts:
+            return
+        else:   
+            os.chmod(path, stat.S_IRWXU+stat.S_IRWXG+stat.S_IRWXO)
+            return
+    if os.path.isdir(path):
+        basepath=path
+        for f in os.listdir(path):
+            path=os.path.join(basepath,f)
+            chmod(path)
+
+    
 def StartServer(config):
     exefile=config.exePath+'/'+config.appname
     if os.path.exists(exefile)==False:
         return False
-    os.system('chmod 777 '+exefile)
+    
+    chmod(config.apphome)
+    
     cmd='cd '+config.exePath+'&&./'+config.appname
     keyword=config.appname
     try:
