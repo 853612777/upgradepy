@@ -467,7 +467,7 @@ def Upgrade(config):
     versionRemote=getVersionFromServer(versionRemotePath)
     versionLocal=config.versionLocal
     URIRemotePath=config.URI+'/'
-    LocalTemp=time.strftime(r"%Y_%m_%d_%H_%M_%S",time.localtime())
+    LocalTemp=os.path.join(getAppPath(),time.strftime(r"%Y_%m_%d_%H_%M_%S",time.localtime()))
     appname=config.appname
     apphome=config.apphome
     DstDir=apphome+'/'
