@@ -8,6 +8,7 @@ import socket
 import struct
 import urllib2
 import stat
+import re
 
 def readINI(lines):
     result={}
@@ -597,6 +598,20 @@ def selfStarting(config):
             logger.write('write self-starting error')
             sys.exit(2)
     
+def getHostIPs():
+    '''获取主机IP，可能有两个'''
+    cmd='ifconfig'
+    proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,shell=True)
+    content=proc.communicate()[0]
+    result=[]
+    pattern=re.compile('192\.168\.\d+\.\d+')
+    matchs=re.findall(pattern,content)
+    for m in matchs:
+        digit=m.split('.')
+        if digit[2]!='2' and digit[3]!='1' and digit[3]!='255':
+            result.append(m)
+    return result
+
 
 
 if __name__ == '__main__':
