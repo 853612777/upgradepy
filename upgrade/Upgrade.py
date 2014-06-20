@@ -10,6 +10,7 @@ import struct
 import urllib2
 import stat
 import re
+import threading
 
 def readINI(lines):
     result={}
@@ -694,6 +695,106 @@ def getHostIPs():
             result.append(m)
     return result
 
+
+def getHostIP():
+    IPs=getHostIPs()
+    if len(IPs)==0:
+        return ''
+    if len(IPs)==1:
+        return IPs[0]
+    try:
+        for ip in IPs:
+            tmp=ip.split('.')
+            tmp[3]='1'
+            newip='.'.join(tmp)
+            success=pingSuccess(newip)
+            if success:
+                return ip
+        return ''
+    except:
+        return ''
+
+
+def getMountStatement(item,user,passwd):
+    if len(item)!=5:
+        return ''
+    result=''
+    if 'smb'==item[0]:
+        result='mount -t cifs -o username={0},password={1},iocharset=utf8 //{2}{3} {4}'.format(user,passwd,item[3],item[4],item[2])
+    elif 'nfs'==item[0]:
+        result='mount -t nfs {0}:{1} {2}'.format(item[3],item[4],item[2])
+    else:
+        return ''
+    return result
+
+
+def getTotalMountItems(ip,items):
+    if ''==ip:
+        return []
+    Need=[]
+    for item in items:
+        if ip in item[1]:
+            Need.append(item)
+    return Need
+
+def getLeftNeedMount(Total,Already):
+    Left=[]
+    for item in Total:
+        if item not in Already:
+            Left.append(item)
+    return Left
+
+
+def getMountlistFromApache(uri):
+    urlobj=None
+    result=[]
+    try:
+        req=urllib2.Request(uri)
+        urlobj=urllib2.urlopen(req)
+        lines=urlobj.read()
+        lines=lines.strip().split('\n')
+        for line in lines:
+            line=line.strip()
+            if ''!=line and line.startswith('#')==False:
+                item=getMountItem(line)
+                if ['','','','','']!=item:
+                    result.append(item)
+        return result
+    except:
+        return []
+    finally:
+        if urlobj:
+            urlobj.close()
+
+
+class Mounter(threading.Thread):
+    def __init__(self,uri,user,passwd):
+        super(Mounter,self).__init__()
+        self.hostIP=getHostIP()
+        self.mountlistUri=uri
+        self.mountlistString=getMountlistFromApache(uri)
+        self.user=user
+        self.passwd=passwd
+    
+    def checkMountlist(self):
+        mountlist=getMountlistFromApache(self.mountlistUri)
+        if self.mountlistString == mountlist:
+            return False
+        else:
+            return True
+            
+    def toMount(self):
+        Total= getTotalMountItems(self.hostIP,self.mountlistString)
+        Already=getAlreadyMount(self.hostIP)
+        Left=getLeftNeedMount(Total,Already)
+        result=[getMountStatement(item,self.user,self.passwd) for item in Left]
+        print result
+        
+    def run(self):
+        while True:
+            if self.checkMountlist()==True:
+                self.toMount()
+            time.sleep(60)
 
 
 if __name__ == '__main__':
