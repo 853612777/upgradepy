@@ -1,4 +1,5 @@
 #-*- coding:utf-8 -*-
+#vers=0.0.0.1
 import os
 import time
 import shutil
@@ -597,7 +598,88 @@ def selfStarting(config):
         if WriteRcLocal(config.selfstarting)==False:
             logger.write('write self-starting error')
             sys.exit(2)
+
+def getCMDReturn(cmd):
+    try:
+        proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,shell=True)
+        ret=proc.communicate()[0]
+        lines=ret.strip().split('\n')
+        result=[]
+        for line in lines:
+            result.append(line.strip())
+        return result
+    except:
+        return []    
     
+    
+def getMountItem(line):
+    '''type,dstIP,dstPath,srcIP,srcPath'''
+    try:
+        item=['','','','','']
+        pattern=re.compile('\[([^\[\]]+?)\]')
+        ms=re.findall(pattern,line)
+        item[0]=ms[0]
+        tmp=ms[1].split(':')
+        item[1]=tmp[0]
+        item[2]=tmp[1]
+        tmp=ms[2].split(':')
+        item[3]=tmp[0]
+        item[4]=tmp[1]
+        return item
+    except:
+        return ['','','','','']
+    
+
+def ReadMountFile(path):
+    fp=None
+    result=[]
+    try:
+        fp=open(path,'r')
+        lines=fp.readlines();
+        for line in lines:
+            line=line.strip()
+            if ''!=line and line.startswith('#')==False:
+                item=getMountItem(line)
+                if ['','','','','']!=item:
+                    result.append(item)
+        return result
+    except:
+        return []
+    finally:
+        if fp:
+            fp.close()
+            
+
+    
+def getAlreadyMount(IP):
+    rets=getCMDReturn('mount -l')
+    result=[]
+    pattern=re.compile('(192\.168\.\d+\.\d+):{0,1}(.*) on (.*) type (.*) \(.*\)')
+    for line in rets:
+        m=re.search(pattern,line)
+        if m:
+            if m.group(4)=='cifs':
+                result.append(['smb',IP,m.group(3),m.group(1),m.group(2)])
+            else:
+                result.append(['nfs',IP,m.group(3),m.group(1),m.group(2)])
+    return result
+
+
+def pingSuccess(IP):
+    rets=getCMDReturn('ping {0} -c 2'.format(IP))
+    for r in rets:
+        if 'received' in r:
+            m=re.search('(\d) received',r)
+            if m:
+                count=m.group(1)
+                try:
+                    if int(count)>=1:
+                        return True
+                except:
+                    return False
+    return False
+
+
 def getHostIPs():
     '''获取主机IP，可能有两个'''
     cmd='ifconfig'
