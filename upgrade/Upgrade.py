@@ -860,12 +860,14 @@ class MountQuery(threading.Thread):
             return False
             
     def SendString(self,client,info):
-        info=str(info)
-        length=len(info)
+        text=''
+        for i in info:
+            text+=str(i)+'\n'
+        length=len(text)
         bs=struct.pack('i',length)
         try:
             client.send(bs)
-            client.send(info)
+            client.send(text)
         except:
             pass
         

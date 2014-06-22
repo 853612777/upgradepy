@@ -1,5 +1,6 @@
 eclipse.preferences.version=1
 encoding/LogSummary.py=utf-8
+encoding/MountCheck.py=utf-8
 encoding/Upgrade.py=utf-8
 encoding/checkLogSummary.py=utf-8
 encoding/checkServices.py=utf-8
