@@ -772,9 +772,10 @@ class Mounter(threading.Thread):
         super(Mounter,self).__init__()
         self.hostIP=getHostIP()
         self.mountlistUri=uri
-        self.mountlistString=getMountlistFromApache(uri)
+        self.mountlistString=''
         self.user=user
         self.passwd=passwd
+        self.MountFails=[]
     
     def checkMountlist(self):
         mountlist=getMountlistFromApache(self.mountlistUri)
@@ -783,18 +784,48 @@ class Mounter(threading.Thread):
         else:
             return True
             
-    def toMount(self):
+    def executeMount(self,item):
+        if pingSuccess(item[3])==False:
+            return False
+        else:
+            cmd=getMountStatement(item,self.user,self.passwd)
+            if ''==cmd:
+                return True
+            proc=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
+            ret=proc.communicate()[0]
+            if None!=ret and ('timed out' in ret or 'mount error' in ret or 'Unable' in ret):
+                print cmd
+                return False
+            return True
+            
+    def toMountLeft(self):
         Total= getTotalMountItems(self.hostIP,self.mountlistString)
         Already=getAlreadyMount(self.hostIP)
         Left=getLeftNeedMount(Total,Already)
-        result=[getMountStatement(item,self.user,self.passwd) for item in Left]
-        print result
+        for item in Left:
+            if self.executeMount(item)==False:
+                if item not in self.MountFails:
+                    self.MountFails.append(item)
+    
+    def toMountFails(self):
+        fails=self.MountFails
+        self.MountFails=[]
+        for failitem in fails:
+            if self.executeMount(failitem)==False:
+                self.MountFails.append(failitem)
+            
         
     def run(self):
+        self.mountlistString=getMountlistFromApache(self.mountlistUri)
+        self.toMountLeft()
         while True:
-            if self.checkMountlist()==True:
-                self.toMount()
-            time.sleep(60)
+            time.sleep(30)
+            if self.checkMountlist()==False:
+                self.toMountLeft()
+            self.toMountFails()
+
+
+
 
 
 if __name__ == '__main__':
