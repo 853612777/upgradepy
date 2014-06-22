@@ -827,6 +827,66 @@ class Mounter(threading.Thread):
 
 
 
+class MountQuery(threading.Thread):
+    def __init__(self,mounter):
+        super(MountQuery,self).__init__()
+        self.mounter=mounter
+        
+    def Bind(self):
+        sockfd=None
+        try:
+            sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            sockfd.bind(('',6789))
+            return sockfd
+        except socket.error:
+            if sockfd:
+                sockfd.close()
+            try:
+                sockfd=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                sockfd.bind(('',6788))
+                return sockfd
+            except:
+                return None
+                
+    def verify(self,client):
+        try:
+            client.settimeout(3)
+            text=client.recv(10)
+            if '1234567890'==text:
+                return True
+            else:
+                return False
+        except:
+            return False
+            
+    def SendString(self,client,info):
+        info=str(info)
+        length=len(info)
+        bs=struct.pack('i',length)
+        try:
+            client.send(bs)
+            client.send(info)
+        except:
+            pass
+        
+    def run(self):
+        sockfd=self.Bind()
+        if None==sockfd:
+            return
+        sockfd.listen(16)
+        while True:
+            connection,address=sockfd.accept()
+            if self.verify(connection):
+                info=getAlreadyMount(self.mounter.hostIP)
+                self.SendString(connection,info)
+            else:
+                pass
+            connection.close()
+        sockfd.close()
+    
+
+
+
 
 if __name__ == '__main__':
     config=Config('Config.ini')
