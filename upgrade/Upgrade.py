@@ -888,6 +888,26 @@ class MountQuery(threading.Thread):
     
 
 
+def setDaemon():
+    def Fork():
+        try:
+            pid=os.fork()
+            if pid>0:
+                sys.exit(0)
+        except:
+            sys.exit(1)
+    Fork()
+    os.chdir('/')
+    os.setsid()
+    os.umask(0)
+    Fork()
+    sin=file('/dev/null','r')
+    sout=file('/dev/null','a+')
+    serr=file('/dev/null','a+')
+    os.dup2(sin.fileno(),sys.stdin.fileno())
+    os.dup2(sout.fileno(),sys.stdout.fileno())
+    os.dup2(serr.fileno(),sys.stderr.fileno())
+
 
 
 if __name__ == '__main__':
