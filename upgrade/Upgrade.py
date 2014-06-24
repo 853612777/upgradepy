@@ -181,6 +181,8 @@ class Config():
             self.logip=getIP(self.logips,self.logport)
             self.selfstarting=getString(values,'selfstarting','python /home/server/uServerUpgrade.py')
             self.libs=getlibs(values,'libs')
+            self.mountuser=getString(values,'mountuser','southbay')
+            self.mountpasswd=getString(values,'mountpasswd','123456')
             return True
         except:
             return False
@@ -202,6 +204,8 @@ class Config():
             fp.write('logport = '+self.logport+'\n')
             fp.write('selfstarting = '+self.selfstarting+'\n')
             fp.write('libs = '+';'.join(self.libs)+'\n')
+            fp.write('mountuser = '+self.mountuser+'\n')
+            fp.write('mountpasswd = '+self.mountpasswd+'\n')
             return True
         except:
             return False
@@ -771,7 +775,19 @@ class Mounter(threading.Thread):
     def __init__(self,uri,user,passwd):
         super(Mounter,self).__init__()
         self.hostIP=getHostIP()
-        self.mountlistUri=uri
+        
+        result=uri
+        m=re.search('(http://\d+\.\d+\.\d+\.\d+/)',uri)
+        try:
+            if m:
+                result=m.group(1)
+                result+='uServer/'
+            else:
+                result='http://192.168.5.215/uServer/'
+        except:
+            result='http://192.168.5.215/uServer/'
+        
+        self.mountlistUri=result
         self.mountlistString=''
         self.user=user
         self.passwd=passwd
@@ -894,7 +910,8 @@ def setDaemon():
             pid=os.fork()
             if pid>0:
                 sys.exit(0)
-        except:
+        except Exception as e:
+            print str(e)
             sys.exit(1)
     Fork()
     os.chdir('/')
@@ -911,6 +928,7 @@ def setDaemon():
 
 
 if __name__ == '__main__':
+    setDaemon()
     config=Config('Config.ini')
     if False==config.Read():
         print 'read ini error'
@@ -922,6 +940,15 @@ if __name__ == '__main__':
     print 'selfStarting done...'
     libsCheck(config)#检查依赖库
     print 'libsCheck done...'
+    
+    mounter=Mounter(config.URI,config.mountuser,config.mountpasswd)
+    mounter.setDaemon(True)
+    mounter.start()
+    
+    mountQuery=MountQuery(mounter)
+    mountQuery.setDaemon(True)
+    mountQuery.start()
+    
     KillServer(config)
     bstart=StartServer(config)
     print 'StartServer done...'
